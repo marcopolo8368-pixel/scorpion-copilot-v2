@@ -466,8 +466,11 @@ def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    # Start background tasks
-    start_background_tasks()
+    # Start background tasks (only in local development)
+    # On Vercel/serverless, data is fetched on-demand
+    import os
+    if os.environ.get('VERCEL') != '1':
+        start_background_tasks()
     
     # Run the Flask app
     print("Starting Scorpion Copilot API Server...")
