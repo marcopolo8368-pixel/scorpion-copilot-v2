@@ -637,88 +637,56 @@
 
     <script>
         // Sample news data
-        const marketNews = [
+        // Fetch real news from API
+        let marketNews = [];
+        async function loadRealNews() {
+            try {
+                const response = await fetch('/api/news');
+                if (response.ok) {
+                    const data = await response.json();
+                    marketNews = data.news || [];
+                    displayNews(marketNews);
+                } else {
+                    // Fallback: Show message that news is loading
+                    marketNews = [{
+                        title: 'Loading Market News',
+                        summary: 'Fetching the latest financial news from live sources...',
+                        impact: 'neutral',
+                        timestamp: new Date().toISOString(),
+                        source: 'Market Data',
+                        tickers: [],
+                        category: 'system'
+                    }];
+                }
+            } catch (error) {
+                console.error('Error loading news:', error);
+                marketNews = [{
+                    title: 'News Loading Error',
+                    summary: 'Unable to load news. Please try refreshing the page.',
+                    impact: 'neutral',
+                    timestamp: new Date().toISOString(),
+                    source: 'System',
+                    tickers: [],
+                    category: 'system'
+                }];
+            }
+        }
+        
+        // Initially empty array - will be populated by API
+        const marketNews_placeholder = [
             {
-                title: 'Federal Reserve Signals Potential Rate Cuts in Q2 2024',
-                summary: 'Fed Chair Powell hints at monetary policy easing, citing inflation control progress and economic stability concerns. Markets rally on dovish tone.',
-                impact: 'positive',
-                timestamp: '2 minutes ago',
-                source: 'Bloomberg',
-                tickers: ['SPY', 'QQQ', 'XLF', 'TLT'],
-                category: 'fed',
-                featured: true
-            },
-            {
-                title: 'NVIDIA Reports Record Quarterly Earnings: AI Chip Demand Surges 200%',
-                summary: 'Data center revenue reaches $14.5B as AI infrastructure spending accelerates. Company raises full-year guidance significantly.',
-                impact: 'positive',
-                timestamp: '15 minutes ago',
-                source: 'CNBC',
-                tickers: ['NVDA', 'AMD', 'INTC', 'SMCI'],
-                category: 'earnings',
-                featured: true
-            },
-            {
-                title: 'Bitcoin Surges Past $100K Milestone on Institutional Adoption',
-                summary: 'Cryptocurrency reaches new all-time high as ETF inflows accelerate and corporate treasury adoption increases.',
-                impact: 'positive',
-                timestamp: '1 hour ago',
-                source: 'CoinDesk',
-                tickers: ['BTC-USD', 'ETH-USD', 'COIN', 'MSTR'],
-                category: 'crypto',
-                featured: false
-            },
-            {
-                title: 'Tesla Announces New Gigafactory in Texas for Cybertruck Production',
-                summary: 'Company selects Austin for next major manufacturing facility, shares up 8% on production capacity expansion.',
-                impact: 'positive',
-                timestamp: '2 hours ago',
-                source: 'MarketWatch',
-                tickers: ['TSLA', 'ARKK'],
-                category: 'tech',
-                featured: false
-            },
-            {
-                title: 'Oil Prices Spike 5% on Middle East Tensions and Supply Concerns',
-                summary: 'Crude oil futures surge as geopolitical developments threaten global supply chains and energy security.',
-                impact: 'negative',
-                timestamp: '3 hours ago',
-                source: 'Reuters',
-                tickers: ['XOM', 'CVX', 'USO', 'XLE'],
-                category: 'breaking',
-                featured: false
-            },
-            {
-                title: 'Microsoft Azure Cloud Revenue Grows 28% in Q4',
-                summary: 'Enterprise cloud adoption drives strong performance as AI services gain traction among corporate clients.',
-                impact: 'positive',
-                timestamp: '4 hours ago',
-                source: 'TechCrunch',
-                tickers: ['MSFT', 'AMZN', 'GOOGL'],
-                category: 'earnings',
-                featured: false
-            },
-            {
-                title: 'ARK Invest Increases Bitcoin Allocation to 15% of Portfolio',
-                summary: 'Cathie Wood\'s fund doubles down on crypto exposure as institutional adoption accelerates globally.',
-                impact: 'positive',
-                timestamp: '5 hours ago',
-                source: 'ARK News',
-                tickers: ['ARKK', 'BTC-USD', 'COIN'],
-                category: 'crypto',
-                featured: false
-            },
-            {
-                title: 'Apple Reports Strong iPhone 15 Sales Despite Economic Headwinds',
-                summary: 'Premium smartphone segment shows resilience as consumers prioritize quality over price in uncertain times.',
-                impact: 'positive',
-                timestamp: '6 hours ago',
-                source: 'Apple Insider',
-                tickers: ['AAPL', 'TSM', 'QCOM'],
-                category: 'earnings',
-                featured: false
+                title: 'Loading Real-Time News',
+                summary: 'Fetching the latest financial news...',
+                impact: 'neutral',
+                timestamp: new Date().toISOString(),
+                source: 'Market Data',
+                tickers: [],
+                category: 'system'
             }
         ];
+
+        // Initialize: Load real news on page load
+        loadRealNews();
 
         // Sample analysis data
         const marketAnalysis = [
@@ -732,7 +700,7 @@
             },
             {
                 title: 'Federal Reserve Policy Impact',
-                content: 'The Fed\'s dovish signals are creating a favorable environment for risk assets. Our analysis suggests that potential rate cuts in Q2 2024 could provide significant tailwinds for growth stocks and technology sectors. The market is pricing in a soft landing scenario with continued economic expansion.'
+                content: 'The Fed\'s policy signals are creating a dynamic environment for risk assets. Current market analysis suggests evolving monetary policy could provide significant tailwinds for growth stocks and technology sectors. The market is evaluating economic conditions for continued expansion.'
             },
             {
                 title: 'Energy Sector Volatility Assessment',
@@ -767,17 +735,16 @@
             `).join('');
         }
 
-        function refreshNews() {
+        async function refreshNews() {
             const button = document.querySelector('.refresh-btn');
             button.textContent = '🔄 Refreshing...';
             button.disabled = true;
             
-            setTimeout(() => {
-                displayNews(marketNews);
-                displayAnalysis(marketAnalysis);
-                button.textContent = '🔄 Refresh News';
-                button.disabled = false;
-            }, 2000);
+            // Reload real news from API
+            await loadRealNews();
+            
+            button.textContent = '🔄 Refresh News';
+            button.disabled = false;
         }
 
         // Filter functionality
@@ -800,8 +767,7 @@
         // Auto-refresh every 60 seconds
         setInterval(refreshNews, 60000);
 
-        // Initial load
-        displayNews(marketNews);
+        // Initial load - display will be called by loadRealNews()
         displayAnalysis(marketAnalysis);
     </script>
 </body>

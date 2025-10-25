@@ -582,89 +582,45 @@
     </div>
 
     <script>
-        // Sample alerts data
-        const alertsData = [
-            {
-                id: 1,
-                title: 'NVDA Price Alert Triggered',
-                content: 'NVIDIA stock has reached $485.50, exceeding your target of $480. Strong AI momentum continues with 200% revenue growth.',
-                time: '2 minutes ago',
-                type: 'price',
-                priority: 'urgent',
-                tickers: ['NVDA'],
-                unread: true
-            },
-            {
-                id: 2,
-                title: 'Bitcoin Breaks $100K Milestone',
-                content: 'BTC-USD has surged past $100,000 for the first time. Institutional adoption accelerating with ETF inflows.',
-                time: '15 minutes ago',
-                type: 'price',
-                priority: 'urgent',
-                tickers: ['BTC-USD'],
-                unread: true
-            },
-            {
-                id: 3,
-                title: 'AI Signal: Strong Buy on TSLA',
-                content: 'Our AI analysis indicates Tesla is showing strong momentum with FSD progress and energy storage growth.',
-                time: '1 hour ago',
-                type: 'ai',
-                priority: 'high',
-                tickers: ['TSLA'],
-                unread: true
-            },
-            {
-                id: 4,
-                title: 'Fed Policy News Alert',
-                content: 'Federal Reserve signals potential rate cuts in Q2 2024. Markets rallying on dovish tone from Powell.',
-                time: '2 hours ago',
-                type: 'news',
-                priority: 'high',
-                tickers: ['SPY', 'QQQ', 'TLT'],
-                unread: false
-            },
-            {
-                id: 5,
-                title: 'ARKK Volume Surge Detected',
-                content: 'ARK Innovation ETF showing 2.1x normal volume. Cathie Wood increasing Bitcoin allocation to 15%.',
-                time: '3 hours ago',
-                type: 'volume',
-                priority: 'normal',
-                tickers: ['ARKK'],
-                unread: false
-            },
-            {
-                id: 6,
-                title: 'AMD Price Target Reached',
-                content: 'AMD stock hit $142.30, meeting your price target. AI chip competition heating up with strong data center growth.',
-                time: '4 hours ago',
-                type: 'price',
-                priority: 'normal',
-                tickers: ['AMD'],
-                unread: false
-            },
-            {
-                id: 7,
-                title: 'Oil Price Volatility Alert',
-                content: 'Crude oil futures spike 5% on Middle East tensions. Energy sector showing increased volatility.',
-                time: '5 hours ago',
-                type: 'news',
-                priority: 'high',
-                tickers: ['XOM', 'CVX', 'USO'],
-                unread: false
-            },
-            {
-                id: 8,
-                title: 'Microsoft Azure Growth Signal',
-                content: 'MSFT Azure revenue up 28% in Q4. Enterprise cloud adoption driving strong performance.',
-                time: '6 hours ago',
-                type: 'ai',
-                priority: 'normal',
-                tickers: ['MSFT'],
-                unread: false
+        // Load real alerts from API
+        let alertsData = [];
+        async function loadRealAlerts() {
+            try {
+                const response = await fetch('/api/alerts');
+                if (response.ok) {
+                    const data = await response.json();
+                    alertsData = data.alerts || [];
+                    displayAlerts(alertsData);
+                    updateAlertStats(alertsData);
+                } else {
+                    // Only show empty state if API is unavailable
+                    alertsData = [];
+                    displayAlerts([{
+                        id: 0,
+                        title: 'No Active Alerts',
+                        content: 'Create alerts using the form to the right to receive notifications on price movements and market events.',
+                        time: new Date().toLocaleString(),
+                        type: 'system',
+                        priority: 'normal',
+                        tickers: [],
+                        unread: false
+                    }]);
+                }
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                alertsData = [];
+                displayAlerts([{
+                    id: 0,
+                    title: 'No Active Alerts',
+                    content: 'Create alerts using the form to the right to receive notifications on price movements and market events.',
+                    time: new Date().toLocaleString(),
+                    type: 'system',
+                    priority: 'normal',
+                    tickers: [],
+                    unread: false
+                }]);
             }
-        ];
+        }
 
         function displayAlerts(alerts) {
             const container = document.getElementById('alertsContainer');
@@ -708,8 +664,33 @@
                 if (index > -1) {
                     alertsData.splice(index, 1);
                     displayAlerts(alertsData);
+                    updateAlertStats(alertsData);
                 }
             }
+        }
+
+        function updateAlertStats(alerts) {
+            const activeCount = alerts.length;
+            const unreadCount = alerts.filter(a => a.unread).length;
+            const urgentCount = alerts.filter(a => a.priority === 'urgent').length;
+            
+            // Update stats display
+            document.querySelectorAll('.stat-item').forEach(item => {
+                const label = item.querySelector('.stat-label').textContent;
+                const valueSpan = item.querySelector('.stat-value');
+                
+                if (label === 'Active Alerts') {
+                    valueSpan.textContent = activeCount;
+                } else if (label === 'Unread Alerts') {
+                    valueSpan.textContent = unreadCount;
+                } else if (label === 'Urgent Alerts') {
+                    valueSpan.textContent = urgentCount;
+                } else if (label === 'Triggered Today') {
+                    valueSpan.textContent = '0';  // API should provide this
+                } else if (label === 'Success Rate') {
+                    valueSpan.textContent = '100%';  // API should provide this
+                }
+            });
         }
 
         // Filter functionality
@@ -738,14 +719,38 @@
         });
 
         // Form submission
-        document.getElementById('alertForm').addEventListener('submit', function(e) {
+        document.getElementById('alertForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Alert created successfully! You will be notified when the conditions are met.');
-            this.reset();
+            const inputs = e.target.querySelectorAll('input, select');
+            const alertData = {
+                symbol: inputs[0].value,
+                type: inputs[1].value,
+                threshold: inputs[2].value,
+                priority: inputs[3].value
+            };
+            
+            try {
+                const response = await fetch('/api/alerts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(alertData)
+                });
+                
+                if (response.ok) {
+                    alert('Alert created successfully! You will be notified when the conditions are met.');
+                    e.target.reset();
+                    loadRealAlerts(); // Reload alerts
+                } else {
+                    alert('Error creating alert. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error creating alert:', error);
+                alert('Error creating alert. Please try again.');
+            }
         });
 
-        // Initial load
-        displayAlerts(alertsData);
+        // Initial load - load real alerts
+        loadRealAlerts();
     </script>
 </body>
 </html>

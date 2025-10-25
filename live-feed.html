@@ -534,8 +534,28 @@
     </div>
 
     <script>
-        // Sample urgent signals data
-        const urgentSignals = [
+        // Load real signals from API
+        let urgentSignals = [];
+        async function loadRealSignals() {
+            try {
+                const response = await fetch('/api/urgent-signals');
+                if (response.ok) {
+                    const data = await response.json();
+                    urgentSignals = data.signals || [];
+                    displaySignals(urgentSignals);
+                } else {
+                    urgentSignals = [];
+                    displaySignals([]);
+                }
+            } catch (error) {
+                console.error('Error loading signals:', error);
+                urgentSignals = [];
+                displaySignals([]);
+            }
+        }
+
+        // Sample urgent signals data - FALLBACK (will be overwritten)
+        const urgentSignals_fallback = [
             {
                 ticker: 'NVDA',
                 score: 95,
@@ -658,8 +678,28 @@
             }
         ];
 
-        // Sample news data
-        const marketNews = [
+        // Load real news from API
+        let marketNews = [];
+        async function loadRealNews() {
+            try {
+                const response = await fetch('/api/news');
+                if (response.ok) {
+                    const data = await response.json();
+                    marketNews = data.news || [];
+                    displayNews(marketNews);
+                } else {
+                    marketNews = [];
+                    displayNews([]);
+                }
+            } catch (error) {
+                console.error('Error loading news:', error);
+                marketNews = [];
+                displayNews([]);
+            }
+        }
+
+        // Sample news data - FALLBACK (will be overwritten)
+        const marketNews_fallback = [
             {
                 title: 'Federal Reserve Signals Potential Rate Cuts',
                 summary: 'Fed Chair Powell hints at monetary policy easing, boosting market sentiment across all sectors',
@@ -783,43 +823,17 @@
             `).join('');
         }
 
-        function refreshSignals() {
+        async function refreshSignals() {
             const button = document.querySelector('.refresh-btn');
             button.textContent = '🔄 Refreshing...';
             button.disabled = true;
             
-            // Fetch urgent signals from API
-            fetch('/api/urgent-signals?threshold=80')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.signals) {
-                        displaySignals(data.signals);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching signals:', error);
-                    // Fallback to static data
-                    displaySignals(urgentSignals);
-                });
+            // Reload both signals and news
+            await loadRealSignals();
+            await loadRealNews();
             
-            // Fetch news from API
-            fetch('/api/news')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.news) {
-                        displayNews(data.news);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching news:', error);
-                    // Fallback to static data
-                    displayNews(marketNews);
-                });
-            
-            setTimeout(() => {
-                button.textContent = '🔄 Refresh Signals';
-                button.disabled = false;
-            }, 2000);
+            button.textContent = '🔄 Refresh Signals';
+            button.disabled = false;
         }
 
         // Filter functionality
@@ -850,8 +864,9 @@
         // Auto-refresh every 30 seconds
         setInterval(refreshSignals, 30000);
 
-        // Initial load - try API first, fallback to static data
-        refreshSignals();
+        // Initial load - load real data
+        loadRealSignals();
+        loadRealNews();
     </script>
 </body>
 </html>

@@ -20,7 +20,7 @@ def create_embedded_dashboard():
         data = json.load(f)
     
     # Read the enhanced dashboard HTML
-    with open('TradingIntelligence_Dashboard.html', 'r', encoding='utf-8') as f:
+    with open('ScorpionCopilot_Dashboard.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
     
     # Replace the loadData function with embedded data

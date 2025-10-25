@@ -60,42 +60,43 @@ alerts_data = []
 news_data = []
 
 def update_market_data():
-    """Update market data (called on-demand for Vercel)"""
+    """Background task to update market data every 5 minutes"""
     global market_data, news_data
     
-    try:
-        print("Updating market data...")
+    while True:
+        try:
+            print("Updating market data...")
+            
+            # Run analysis on a sample of assets for performance
+            sample_size = min(100, len(ALL_TICKERS))
+            results = run_live_analysis(sample_size=sample_size)
+            
+            # Store the results
+            market_data = {
+                'timestamp': datetime.now().isoformat(),
+                'assets': results,
+                'total_analyzed': len(results)
+            }
+            
+            # Update news data
+            news_data = get_news_feed()
+            
+            # Save to file for the standalone dashboard
+            with open('live_trading_signals.json', 'w') as f:
+                json.dump(market_data, f, indent=2)
+            
+            print(f"Updated {len(results)} assets")
+            
+        except Exception as e:
+            print(f"Error updating market data: {e}")
         
-        # Run analysis on a larger sample for better coverage
-        sample_size = min(200, len(ALL_TICKERS))
-        results = run_live_analysis(sample_size=sample_size)
-        
-        # Store the results
-        market_data = {
-            'timestamp': datetime.now().isoformat(),
-            'assets': results,
-            'total_analyzed': len(results)
-        }
-        
-        # Update news data
-        news_data = get_news_feed()
-        
-        # Save to file for the standalone dashboard
-        with open('live_trading_signals.json', 'w') as f:
-            json.dump(market_data, f, indent=2)
-        
-        print(f"Updated {len(results)} assets")
-        return True
-        
-    except Exception as e:
-        print(f"Error updating market data: {e}")
-        return False
+        # Wait 5 minutes before next update
+        time.sleep(300)
 
 def start_background_tasks():
-    """Start background data update tasks (disabled for Vercel)"""
-    # Background tasks disabled for Vercel deployment
-    # Data will be updated on-demand via API calls
-    pass
+    """Start background data update tasks"""
+    update_thread = threading.Thread(target=update_market_data, daemon=True)
+    update_thread.start()
 
 # API Routes
 
@@ -104,32 +105,26 @@ def index():
     """Serve the main dashboard"""
     return send_from_directory('.', 'index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    """Serve the main Scorpion Copilot dashboard"""
+    return send_from_directory('.', 'ScorpionCopilot_Dashboard.html')
+
+@app.route('/TradingIntelligence_Dashboard.html')
+def trading_dashboard():
+    """Serve the Trading Intelligence dashboard"""
+    return send_from_directory('.', 'TradingIntelligence_Dashboard.html')
+
 @app.route('/<path:filename>')
-def serve_static(filename):
-    """Serve static HTML files"""
-    if filename.endswith('.html'):
-        return send_from_directory('.', filename)
-    else:
-        return send_from_directory('.', filename)
+def serve_html(filename):
+    """Serve HTML files"""
+    return send_from_directory('.', filename)
 
 @app.route('/api/market-data')
 def get_market_data():
     """Get current market data"""
-    global market_data
-    
-    # If no data available, try to load from file or initialize
     if not market_data:
-        try:
-            # Try to load from file first
-            with open('live_trading_signals.json', 'r') as f:
-                market_data = json.load(f)
-        except:
-            # If no file, initialize with empty data
-            market_data = {
-                'timestamp': datetime.now().isoformat(),
-                'assets': [],
-                'total_analyzed': 0
-            }
+        return jsonify({'error': 'No data available'}), 404
     
     return jsonify(market_data)
 
@@ -158,10 +153,36 @@ def get_news_api():
 
 @app.route('/api/asset/<ticker>')
 def get_asset_details(ticker):
-    """Get detailed analysis for a specific asset"""
+    """Get detailed REAL-TIME analysis for a specific asset"""
     try:
+        import yfinance as yf
+        
+        # Fetch REAL-TIME current price
+        stock = yf.Ticker(ticker.upper())
+        info = stock.info
+        real_time_price = None
+        
+        if info:
+            real_time_price = (
+                info.get('regularMarketPrice') or 
+                info.get('currentPrice') or 
+                info.get('regularMarketPreviousClose') or
+                info.get('previousClose')
+            )
+        
+        # Run complete analysis
         analysis = analyze_asset(ticker)
+        
         if analysis:
+            # Update with REAL-TIME price
+            if real_time_price:
+                analysis['price'] = real_time_price
+                analysis['technical_score'] = real_time_price
+            
+            # Add metadata
+            analysis['last_updated'] = datetime.now().isoformat()
+            analysis['data_source'] = 'yfinance_live'
+            
             return jsonify(analysis)
         else:
             return jsonify({'error': 'Asset not found'}), 404
@@ -170,15 +191,87 @@ def get_asset_details(ticker):
 
 @app.route('/api/chart/<ticker>')
 def get_chart_data(ticker):
-    """Get chart data for a specific asset"""
+    """Get REAL-TIME chart data for a specific asset"""
     timeframe = request.args.get('timeframe', '1m')
     
     try:
+        import yfinance as yf
+        
+        # Get REAL-TIME price and update chart data
         chart_data = fetch_chart_data(ticker, timeframe)
+        
         if chart_data:
+            # Fetch the absolute latest price
+            stock = yf.Ticker(ticker.upper())
+            info = stock.info
+            
+            if info:
+                real_time_price = (
+                    info.get('regularMarketPrice') or 
+                    info.get('currentPrice') or 
+                    info.get('regularMarketPreviousClose') or
+                    info.get('previousClose')
+                )
+                
+                if real_time_price:
+                    # Update the current price in chart data
+                    chart_data['current_price'] = real_time_price
+                    
+                    # Recalculate change and change_percent based on real-time price
+                    if 'data' in chart_data and len(chart_data['data']) > 0:
+                        first_open = chart_data['data'][0]['open']
+                        chart_data['change'] = round(real_time_price - first_open, 2)
+                        chart_data['change_percent'] = round(((real_time_price / first_open) - 1) * 100, 2)
+            
+            chart_data['last_updated'] = datetime.now().isoformat()
+            chart_data['data_source'] = 'yfinance_live'
+            
             return jsonify(chart_data)
         else:
             return jsonify({'error': 'Chart data not available'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ticker/<ticker>')
+def get_ticker_data(ticker):
+    """Get complete REAL-TIME data for a specific ticker"""
+    try:
+        from scorpion_backend import analyze_asset
+        import yfinance as yf
+        
+        # Fetch REAL-TIME current price directly from yfinance
+        stock = yf.Ticker(ticker.upper())
+        
+        # Get the absolute latest price info
+        info = stock.info
+        real_time_price = None
+        
+        if info:
+            # Try multiple fields to get the absolute latest price
+            real_time_price = (
+                info.get('regularMarketPrice') or 
+                info.get('currentPrice') or 
+                info.get('regularMarketPreviousClose') or
+                info.get('previousClose')
+            )
+        
+        # Run complete analysis
+        data = analyze_asset(ticker.upper())
+        
+        if data:
+            # Update with the REAL-TIME price if we got one
+            if real_time_price:
+                data['price'] = real_time_price
+                # Also update the technical score to reflect the new price
+                data['technical_score'] = real_time_price
+            
+            # Add metadata about data freshness
+            data['last_updated'] = datetime.now().isoformat()
+            data['data_source'] = 'yfinance_live'
+            
+            return jsonify(data)
+        else:
+            return jsonify({'error': 'Ticker not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -304,19 +397,16 @@ def get_stats():
 def refresh_data():
     """Manually trigger data refresh"""
     try:
-        # Update market data
-        success = update_market_data()
+        # Run a quick analysis
+        results = run_live_analysis(sample_size=50)
+        market_data['assets'] = results
+        market_data['timestamp'] = datetime.now().isoformat()
         
-        if success:
-            return jsonify({
-                'success': True,
-                'message': f'Refreshed {len(market_data.get("assets", []))} assets',
-                'timestamp': market_data.get('timestamp', datetime.now().isoformat()),
-                'total_analyzed': market_data.get('total_analyzed', 0)
-            })
-        else:
-            return jsonify({'error': 'Failed to refresh data'}), 500
-            
+        return jsonify({
+            'success': True,
+            'message': f'Refreshed {len(results)} assets',
+            'timestamp': market_data['timestamp']
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

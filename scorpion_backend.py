@@ -394,7 +394,28 @@ def fetch_real_data(ticker: str, period: str = '3mo') -> pd.DataFrame:
     """Fetch real market data from Yahoo Finance"""
     try:
         stock = yf.Ticker(ticker)
+        
+        # Try to get info first to check if ticker is valid
+        info = stock.info
+        if not info:
+            return pd.DataFrame()
+        
+        # Fetch historical data
         hist = stock.history(period=period)
+        
+        # Get the most recent price from info (current/recent market price)
+        current_price = info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose')
+        
+        # If we have a current price and it's different from the last close, update it
+        if current_price and not hist.empty:
+            last_close = hist['Close'].iloc[-1]
+            # Only update if the difference is significant (more than 0.5%)
+            if abs(current_price - last_close) / last_close > 0.005:
+                # Update the last row with the current price
+                hist.iloc[-1, hist.columns.get_loc('Close')] = current_price
+                hist.iloc[-1, hist.columns.get_loc('High')] = max(hist.iloc[-1, hist.columns.get_loc('High')], current_price)
+                hist.iloc[-1, hist.columns.get_loc('Low')] = min(hist.iloc[-1, hist.columns.get_loc('Low')], current_price)
+        
         return hist
     except Exception as e:
         print(f"Error fetching {ticker}: {e}")
@@ -859,44 +880,52 @@ def get_urgent_signals(results: List[Dict], threshold: float = 85) -> List[Dict]
     return urgent
 
 def get_news_feed() -> List[Dict]:
-    """Get latest investment news feed"""
-    # In a real implementation, this would connect to news APIs
-    # For now, simulate with market-moving news
-    news_items = [
-        {
-            'title': 'Federal Reserve Signals Potential Rate Cuts',
-            'summary': 'Fed Chair Powell hints at monetary policy easing, boosting market sentiment',
-            'impact': 'positive',
+    """Get latest investment news feed using yfinance news"""
+    news_items = []
+    
+    try:
+        # Get news from top tickers
+        top_tickers = ['SPY', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'XOM']
+        
+        for ticker in top_tickers[:5]:  # Limit to first 5 for performance
+            try:
+                stock = yf.Ticker(ticker)
+                news = stock.news
+                
+                if news:
+                    for article in news[:3]:  # Get first 3 articles per ticker
+                        # Convert timestamp
+                        pub_time = datetime.fromtimestamp(article.get('providerPublishTime', 0))
+                        
+                        news_items.append({
+                            'title': article.get('title', 'No title'),
+                            'summary': article.get('summary', article.get('title', '')),
+                            'impact': 'neutral',  # Could be enhanced with sentiment analysis
+                            'timestamp': pub_time.isoformat(),
+                            'source': article.get('publisher', 'Unknown'),
+                            'tickers': [ticker],
+                            'url': article.get('link', '')
+                        })
+            except Exception as e:
+                print(f"Error fetching news for {ticker}: {e}")
+                continue
+    except Exception as e:
+        print(f"Error in get_news_feed: {e}")
+    
+    # If no real news found, return minimal placeholder
+    if not news_items:
+        news_items = [{
+            'title': 'Market Data Update',
+            'summary': 'Fetching latest market news. Please check back shortly.',
+            'impact': 'neutral',
             'timestamp': datetime.now().isoformat(),
-            'source': 'Bloomberg',
-            'tickers': ['SPY', 'QQQ', 'XLF']
-        },
-        {
-            'title': 'NVIDIA Reports Record Quarterly Earnings',
-            'summary': 'AI chip demand drives 200% revenue growth, stock surges 15%',
-            'impact': 'positive',
-            'timestamp': (datetime.now() - timedelta(hours=2)).isoformat(),
-            'source': 'CNBC',
-            'tickers': ['NVDA', 'AMD', 'INTC']
-        },
-        {
-            'title': 'Oil Prices Spike on Middle East Tensions',
-            'summary': 'Crude oil futures up 5% following geopolitical developments',
-            'impact': 'negative',
-            'timestamp': (datetime.now() - timedelta(hours=4)).isoformat(),
-            'source': 'Reuters',
-            'tickers': ['XOM', 'CVX', 'USO']
-        },
-        {
-            'title': 'Bitcoin Surges Past $100K Milestone',
-            'summary': 'Cryptocurrency reaches new all-time high on institutional adoption',
-            'impact': 'positive',
-            'timestamp': (datetime.now() - timedelta(hours=6)).isoformat(),
-            'source': 'CoinDesk',
-            'tickers': ['BTC-USD', 'ETH-USD', 'COIN']
-        }
-    ]
-    return news_items
+            'source': 'Market Data',
+            'tickers': []
+        }]
+    
+    # Sort by timestamp (newest first) and limit to 20 items
+    news_items.sort(key=lambda x: x['timestamp'], reverse=True)
+    return news_items[:20]
 
 if __name__ == "__main__":
     print("Make sure you have installed: pip install yfinance pandas numpy textblob requests\n")
