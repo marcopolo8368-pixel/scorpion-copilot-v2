@@ -1,8 +1,9 @@
 # Vercel Python serverless function
 # Minimal import to avoid issues with complex dependencies
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 import os
 from datetime import datetime
+from pathlib import Path
 
 # Try to import yfinance for real data
 try:
@@ -11,43 +12,68 @@ try:
 except ImportError:
     YFINANCE_AVAILABLE = False
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../', static_url_path='')
 
-# Health check endpoint
+# Serve HTML files
 @app.route('/')
 def index():
-    return jsonify({
-        'status': 'ok',
-        'service': 'Scorpion Copilot API',
-        'message': 'Please use /api endpoints',
-        'yfinance': 'available' if YFINANCE_AVAILABLE else 'not available'
-    })
+    """Serve the main index.html page"""
+    return send_from_directory('../', 'index.html')
 
-@app.route('/api')
-def api_root():
-    return jsonify({
-        'status': 'ok',
-        'endpoints': {
-            '/api/stats': 'Get platform statistics',
-            '/api/news': 'Get latest market news',
-            '/api/urgent-signals': 'Get urgent investment signals',
-            '/api/ticker/<ticker>': 'Get ticker data'
-        }
-    })
+@app.route('/<path:filename>')
+def serve_files(filename):
+    """Serve HTML files and other static files"""
+    # Serve HTML files
+    if filename.endswith('.html'):
+        return send_from_directory('../', filename)
+    
+    # Serve API endpoints (before the catch-all)
+    if filename.startswith('api/'):
+        return handle_api_routes(filename)
+    
+    return jsonify({'error': 'File not found'}), 404
 
-@app.route('/api/stats')
-def stats():
-    return jsonify({
-        'total_assets': 100,
-        'total_universe': 2076,
-        'strong_buys': 15,
-        'buys': 30,
-        'last_update': datetime.now().isoformat(),
-        'message': 'Stats endpoint - backend loading'
-    })
+def handle_api_routes(path):
+    """Handle API routes"""
+    if path == 'api':
+        return jsonify({
+            'status': 'ok',
+            'endpoints': {
+                '/api/stats': 'Get platform statistics',
+                '/api/news': 'Get latest market news',
+                '/api/urgent-signals': 'Get urgent investment signals',
+                '/api/ticker/<ticker>': 'Get ticker data'
+            }
+        })
+    
+    if path == 'api/stats':
+        return jsonify({
+            'total_assets': 100,
+            'total_universe': 2076,
+            'strong_buys': 15,
+            'buys': 30,
+            'last_update': datetime.now().isoformat(),
+            'message': 'Stats endpoint - backend loading'
+        })
+    
+    if path == 'api/news':
+        return get_news()
+    
+    if path == 'api/urgent-signals':
+        return jsonify({
+            'timestamp': datetime.now().isoformat(),
+            'signals': [],
+            'count': 0
+        })
+    
+    if path.startswith('api/ticker/'):
+        ticker = path.split('/')[-1]
+        return get_ticker_data(ticker)
+    
+    return jsonify({'error': 'Endpoint not found'}), 404
 
-@app.route('/api/news')
-def news():
+def get_news():
+    """Get real news from yfinance"""
     if not YFINANCE_AVAILABLE:
         return jsonify({
             'timestamp': datetime.now().isoformat(),
@@ -59,10 +85,8 @@ def news():
             }]
         })
     
-    # Fetch real news from yfinance
     try:
         news_items = []
-        # Get news from top tickers
         top_tickers = ['SPY', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
         
         for ticker in top_tickers[:5]:
@@ -71,7 +95,7 @@ def news():
                 stock_news = stock.news
                 
                 if stock_news:
-                    for article in stock_news[:2]:  # Get first 2 articles per ticker
+                    for article in stock_news[:2]:
                         pub_time = datetime.fromtimestamp(article.get('providerPublishTime', 0))
                         news_items.append({
                             'title': article.get('title', 'No title'),
@@ -85,7 +109,6 @@ def news():
             except:
                 continue
         
-        # Sort by timestamp and limit
         news_items.sort(key=lambda x: x['timestamp'], reverse=True)
         
         return jsonify({
@@ -99,16 +122,8 @@ def news():
             'error': str(e)
         })
 
-@app.route('/api/urgent-signals')
-def signals():
-    return jsonify({
-        'timestamp': datetime.now().isoformat(),
-        'signals': [],
-        'count': 0
-    })
-
-@app.route('/api/ticker/<ticker>')
-def ticker_data(ticker):
+def get_ticker_data(ticker):
+    """Get ticker data"""
     if not YFINANCE_AVAILABLE:
         return jsonify({
             'error': 'yfinance not available',
@@ -125,7 +140,6 @@ def ticker_data(ticker):
                 'ticker': ticker.upper()
             }), 404
         
-        # Get real-time price
         price = (
             info.get('regularMarketPrice') or 
             info.get('currentPrice') or 
@@ -148,7 +162,44 @@ def ticker_data(ticker):
             'ticker': ticker.upper()
         }), 500
 
-# Export for Vercel - Vercel expects the Flask app to be named 'app'
-# Do not change this variable name
+# API routes with explicit paths
+@app.route('/api')
+def api_root():
+    return jsonify({
+        'status': 'ok',
+        'endpoints': {
+            '/api/stats': 'Get platform statistics',
+            '/api/news': 'Get latest market news',
+            '/api/urgent-signals': 'Get urgent investment signals',
+            '/api/ticker/<ticker>': 'Get ticker data'
+        }
+    })
+
+@app.route('/api/stats')
+def stats():
+    return jsonify({
+        'total_assets': 100,
+        'total_universe': 2076,
+        'strong_buys': 15,
+        'buys': 30,
+        'last_update': datetime.now().isoformat()
+    })
+
+@app.route('/api/news')
+def news():
+    return get_news()
+
+@app.route('/api/urgent-signals')
+def signals():
+    return jsonify({
+        'timestamp': datetime.now().isoformat(),
+        'signals': [],
+        'count': 0
+    })
+
+@app.route('/api/ticker/<ticker>')
+def ticker_data(ticker):
+    return get_ticker_data(ticker)
+
 if __name__ == '__main__':
     app.run()
