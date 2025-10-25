@@ -99,11 +99,6 @@ def start_background_tasks():
 
 # API Routes
 
-@app.route('/')
-def index():
-    """Serve the main dashboard"""
-    return send_from_directory('.', 'index.html')
-
 @app.route('/api/market-data')
 def get_market_data():
     """Get current market data"""
