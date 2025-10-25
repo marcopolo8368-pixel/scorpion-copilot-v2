@@ -148,5 +148,7 @@ def ticker_data(ticker):
             'ticker': ticker.upper()
         }), 500
 
-# Export for Vercel
-handler = app
+# Export for Vercel - Vercel expects the Flask app to be named 'app'
+# Do not change this variable name
+if __name__ == '__main__':
+    app.run()
