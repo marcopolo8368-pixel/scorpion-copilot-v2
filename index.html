@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorpion Copilot - AI Trading Intelligence</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(to right, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            min-width: 200px;
+            z-index: 1000;
+            top: 100%;
+            left: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .nav-dropdown-content a {
+            color: #94a3b8;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            display: block;
+            border-radius: 0;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-dropdown-content a:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-content {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-btn {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-dropdown-btn {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .nav-dropdown-btn::after {
+            content: '▼';
+            font-size: 0.7rem;
+            transition: transform 0.3s;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-btn::after {
+            transform: rotate(180deg);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+
+        .hero .subtitle {
+            font-size: 1.3rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+
+        .feature-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .feature-card h3 {
+            color: #60a5fa;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin: 4rem 0;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(96, 165, 250, 0.4);
+        }
+
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .footer {
+            background: rgba(15, 23, 42, 0.8);
+            border-top: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 2rem;
+            text-align: center;
+            color: #94a3b8;
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .nav-links a {
+                padding: 0.3rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Scorpion Copilot</div>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="ScorpionCopilot_Dashboard.html">Dashboard</a></li>
+                <li><a href="live-feed.html">Live Feed</a></li>
+                <li><a href="top-opportunities.html">Top Opportunities</a></li>
+                <li class="nav-dropdown">
+                    <span class="nav-dropdown-btn">Analysis</span>
+                    <div class="nav-dropdown-content">
+                        <a href="news.html">News & Analysis</a>
+                        <a href="portfolio.html">Portfolio</a>
+                        <a href="alerts.html">Alerts</a>
+                    </div>
+                </li>
+                <li class="nav-dropdown">
+                    <span class="nav-dropdown-btn">Tools</span>
+                    <div class="nav-dropdown-content">
+                        <a href="chatbot.html">AI Chat</a>
+                        <a href="trading212-import.html">Trading212 Import</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="live-indicator">
+            <div class="live-dot"></div>
+            LIVE MARKET DATA
+        </div>
+        
+        <h1>AI-Powered Trading Intelligence</h1>
+        <p class="subtitle">
+            Discover the best investment opportunities across 1000+ assets with real-time AI analysis, 
+            expert insights, and comprehensive market intelligence.
+        </p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value">1000+</div>
+                <div class="label">Assets Analyzed</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">24/7</div>
+                <div class="label">Live Monitoring</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">AI</div>
+                <div class="label">Powered Analysis</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">Real-time</div>
+                <div class="label">Market Data</div>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <a href="ScorpionCopilot_Dashboard.html" class="cta-button">Launch Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>🚀 Comprehensive Asset Coverage</h3>
+                <p>Analyze stocks, crypto, ETFs, bonds, commodities, and international markets across 1000+ symbols with real-time data and AI-powered insights.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🧠 AI-Powered Analysis</h3>
+                <p>Advanced machine learning algorithms analyze technical indicators, news sentiment, expert holdings, and market momentum to generate precise trading signals.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>⚡ Live Market Feed</h3>
+                <p>Real-time updates on urgent investment opportunities, breaking news, and market-moving events with instant notifications and alerts.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📊 Expert Insights</h3>
+                <p>Track holdings of top investors like Warren Buffett, Cathie Wood, and institutional funds to identify high-conviction opportunities.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📈 Interactive Charts</h3>
+                <p>Advanced charting with multiple timeframes, technical indicators, and real-time price action for comprehensive market analysis.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🔔 Smart Alerts</h3>
+                <p>Customizable alerts for price movements, news events, and AI-generated signals to never miss important opportunities.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2024 Scorpion Copilot. All rights reserved. | Real-time market data powered by AI</p>
+    </footer>
+
+    <script>
+        // Add some dynamic stats updates
+        function updateLiveStats() {
+            const stats = document.querySelectorAll('.stat-card .value');
+            // Simulate live updates
+            stats.forEach(stat => {
+                if (stat.textContent.includes('+')) {
+                    const currentValue = parseInt(stat.textContent.replace('+', ''));
+                    const newValue = currentValue + Math.floor(Math.random() * 3);
+                    stat.textContent = '+' + newValue;
+                }
+            });
+        }
+
+        // Update stats every 30 seconds
+        setInterval(updateLiveStats, 30000);
+
+        // Add smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

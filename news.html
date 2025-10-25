@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorpion Copilot - AI Trading Intelligence</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(to right, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        
+        .nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            min-width: 200px;
+            z-index: 1000;
+            top: 100%;
+            left: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .nav-dropdown-content a {
+            color: #94a3b8;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            display: block;
+            border-radius: 0;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-dropdown-content a:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-content {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-btn {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-dropdown-btn {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .nav-dropdown-btn::after {
+            content: '▼';
+            font-size: 0.7rem;
+            transition: transform 0.3s;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-btn::after {
+            transform: rotate(180deg);
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .news-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .news-section h2 {
+            color: #60a5fa;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .news-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .news-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-item.featured {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #60a5fa;
+        }
+
+        .news-title {
+            color: #e2e8f0;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .news-summary {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .news-impact {
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .news-impact.positive {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .news-impact.negative {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .news-impact.neutral {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
+
+        .news-tickers {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .ticker-tag {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .market-overview {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .market-overview h2 {
+            color: #60a5fa;
+            margin-bottom: 1.5rem;
+        }
+
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .market-stat {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+        }
+
+        .market-stat .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #60a5fa;
+        }
+
+        .market-stat .label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 0.3rem;
+        }
+
+        .sentiment-indicator {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .sentiment-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .sentiment-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .sentiment-fill.positive {
+            background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e);
+        }
+
+        .sentiment-fill.negative {
+            background: linear-gradient(90deg, #22c55e, #eab308, #f97316, #ef4444);
+        }
+
+        .sentiment-value {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .sentiment-value.positive {
+            color: #22c55e;
+        }
+
+        .sentiment-value.negative {
+            color: #ef4444;
+        }
+
+        .sentiment-value.neutral {
+            color: #94a3b8;
+        }
+
+        .analysis-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .analysis-section h2 {
+            color: #60a5fa;
+            margin-bottom: 1.5rem;
+        }
+
+        .analysis-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        }
+
+        .analysis-item:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-title {
+            color: #e2e8f0;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .analysis-content {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #94a3b8;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.6);
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(96, 165, 250, 0.4);
+        }
+
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+            
+            .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+            
+            .market-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Scorpion Copilot</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="ScorpionCopilot_Dashboard.html">Dashboard</a></li>
+                <li><a href="live-feed.html">Live Feed</a></li>
+                <li><a href="top-opportunities.html">Top Opportunities</a></li>
+                <li class="nav-dropdown">
+                    <span class="nav-dropdown-btn">Analysis</span>
+                    <div class="nav-dropdown-content">
+                        <a href="news.html" class="active">News & Analysis</a>
+                        <a href="portfolio.html">Portfolio</a>
+                        <a href="alerts.html">Alerts</a>
+                    </div>
+                </li>
+                <li class="nav-dropdown">
+                    <span class="nav-dropdown-btn">Tools</span>
+                    <div class="nav-dropdown-content">
+                        <a href="chatbot.html">AI Chat</a>
+                        <a href="trading212-import.html">Trading212 Import</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                LIVE NEWS & ANALYSIS
+            </div>
+            <h1>Market News & AI Analysis</h1>
+            <p style="color: #94a3b8; font-size: 1.1rem;">
+                Real-time market news, AI-powered sentiment analysis, and comprehensive market intelligence
+            </p>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="refresh-btn" onclick="refreshNews()">🔄 Refresh News</button>
+            </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All News</button>
+            <button class="filter-btn" data-filter="breaking">🚨 Breaking</button>
+            <button class="filter-btn" data-filter="earnings">📊 Earnings</button>
+            <button class="filter-btn" data-filter="fed">🏛️ Fed Policy</button>
+            <button class="filter-btn" data-filter="crypto">₿ Crypto</button>
+            <button class="filter-btn" data-filter="tech">💻 Tech</button>
+        </div>
+
+        <div class="content-grid">
+            <div class="main-content">
+                <div class="news-section">
+                    <h2>📰 Latest Market News</h2>
+                    <div id="newsContainer">
+                        <!-- News will be loaded here -->
+                    </div>
+        </div>
+
+                <div class="analysis-section">
+                    <h2>🧠 AI Market Analysis</h2>
+                    <div id="analysisContainer">
+                        <!-- Analysis will be loaded here -->
+            </div>
+            </div>
+        </div>
+
+            <div class="sidebar">
+                <div class="market-overview">
+                    <h2>📊 Market Overview</h2>
+                    
+                    <div class="market-stats">
+                        <div class="market-stat">
+                            <div class="value">+1.2%</div>
+                            <div class="label">S&P 500</div>
+            </div>
+                        <div class="market-stat">
+                            <div class="value">+2.1%</div>
+                            <div class="label">NASDAQ</div>
+            </div>
+                        <div class="market-stat">
+                            <div class="value">+0.8%</div>
+                            <div class="label">DOW</div>
+            </div>
+                        <div class="market-stat">
+                            <div class="value">+3.4%</div>
+                            <div class="label">VIX</div>
+            </div>
+        </div>
+
+                    <div class="sentiment-indicator">
+                        <span style="color: #94a3b8; font-size: 0.9rem;">Market Sentiment:</span>
+                        <div class="sentiment-bar">
+                            <div class="sentiment-fill positive" style="width: 75%;"></div>
+                        </div>
+                        <span class="sentiment-value positive">Bullish</span>
+        </div>
+
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="color: #60a5fa; margin-bottom: 1rem;">Top Movers</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(34, 197, 94, 0.1); border-radius: 6px;">
+                                <span style="color: #e2e8f0; font-weight: bold;">NVDA</span>
+                                <span style="color: #22c55e; font-weight: bold;">+12.3%</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(34, 197, 94, 0.1); border-radius: 6px;">
+                                <span style="color: #e2e8f0; font-weight: bold;">TSLA</span>
+                                <span style="color: #22c55e; font-weight: bold;">+8.9%</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(239, 68, 68, 0.1); border-radius: 6px;">
+                                <span style="color: #e2e8f0; font-weight: bold;">XOM</span>
+                                <span style="color: #ef4444; font-weight: bold;">-3.2%</span>
+                            </div>
+                        </div>
+                    </div>
+        </div>
+
+                <div class="news-section">
+                    <h2>🔥 Trending Topics</h2>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                            <div style="color: #60a5fa; font-weight: bold; margin-bottom: 0.5rem;">AI Revolution</div>
+                            <div style="color: #94a3b8; font-size: 0.9rem;">NVIDIA earnings drive AI sector surge</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px;">
+                            <div style="color: #22c55e; font-weight: bold; margin-bottom: 0.5rem;">Crypto Rally</div>
+                            <div style="color: #94a3b8; font-size: 0.9rem;">Bitcoin breaks $100K milestone</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                            <div style="color: #ef4444; font-weight: bold; margin-bottom: 0.5rem;">Energy Volatility</div>
+                            <div style="color: #94a3b8; font-size: 0.9rem;">Oil prices spike on tensions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    <script>
+        // Sample news data
+        const marketNews = [
+            {
+                title: 'Federal Reserve Signals Potential Rate Cuts in Q2 2024',
+                summary: 'Fed Chair Powell hints at monetary policy easing, citing inflation control progress and economic stability concerns. Markets rally on dovish tone.',
+                impact: 'positive',
+                timestamp: '2 minutes ago',
+                source: 'Bloomberg',
+                tickers: ['SPY', 'QQQ', 'XLF', 'TLT'],
+                category: 'fed',
+                featured: true
+            },
+            {
+                title: 'NVIDIA Reports Record Quarterly Earnings: AI Chip Demand Surges 200%',
+                summary: 'Data center revenue reaches $14.5B as AI infrastructure spending accelerates. Company raises full-year guidance significantly.',
+                impact: 'positive',
+                timestamp: '15 minutes ago',
+                source: 'CNBC',
+                tickers: ['NVDA', 'AMD', 'INTC', 'SMCI'],
+                category: 'earnings',
+                featured: true
+            },
+            {
+                title: 'Bitcoin Surges Past $100K Milestone on Institutional Adoption',
+                summary: 'Cryptocurrency reaches new all-time high as ETF inflows accelerate and corporate treasury adoption increases.',
+                impact: 'positive',
+                timestamp: '1 hour ago',
+                source: 'CoinDesk',
+                tickers: ['BTC-USD', 'ETH-USD', 'COIN', 'MSTR'],
+                category: 'crypto',
+                featured: false
+            },
+            {
+                title: 'Tesla Announces New Gigafactory in Texas for Cybertruck Production',
+                summary: 'Company selects Austin for next major manufacturing facility, shares up 8% on production capacity expansion.',
+                impact: 'positive',
+                timestamp: '2 hours ago',
+                source: 'MarketWatch',
+                tickers: ['TSLA', 'ARKK'],
+                category: 'tech',
+                featured: false
+            },
+            {
+                title: 'Oil Prices Spike 5% on Middle East Tensions and Supply Concerns',
+                summary: 'Crude oil futures surge as geopolitical developments threaten global supply chains and energy security.',
+                impact: 'negative',
+                timestamp: '3 hours ago',
+                source: 'Reuters',
+                tickers: ['XOM', 'CVX', 'USO', 'XLE'],
+                category: 'breaking',
+                featured: false
+            },
+            {
+                title: 'Microsoft Azure Cloud Revenue Grows 28% in Q4',
+                summary: 'Enterprise cloud adoption drives strong performance as AI services gain traction among corporate clients.',
+                impact: 'positive',
+                timestamp: '4 hours ago',
+                source: 'TechCrunch',
+                tickers: ['MSFT', 'AMZN', 'GOOGL'],
+                category: 'earnings',
+                featured: false
+            },
+            {
+                title: 'ARK Invest Increases Bitcoin Allocation to 15% of Portfolio',
+                summary: 'Cathie Wood\'s fund doubles down on crypto exposure as institutional adoption accelerates globally.',
+                impact: 'positive',
+                timestamp: '5 hours ago',
+                source: 'ARK News',
+                tickers: ['ARKK', 'BTC-USD', 'COIN'],
+                category: 'crypto',
+                featured: false
+            },
+            {
+                title: 'Apple Reports Strong iPhone 15 Sales Despite Economic Headwinds',
+                summary: 'Premium smartphone segment shows resilience as consumers prioritize quality over price in uncertain times.',
+                impact: 'positive',
+                timestamp: '6 hours ago',
+                source: 'Apple Insider',
+                tickers: ['AAPL', 'TSM', 'QCOM'],
+                category: 'earnings',
+                featured: false
+            }
+        ];
+
+        // Sample analysis data
+        const marketAnalysis = [
+            {
+                title: 'AI Sector Momentum Analysis',
+                content: 'The AI sector is experiencing unprecedented momentum with NVIDIA leading the charge. Our AI models indicate continued strength in data center spending, with enterprise adoption accelerating faster than expected. Key catalysts include increased AI infrastructure investment and growing demand for generative AI applications.'
+            },
+            {
+                title: 'Cryptocurrency Market Outlook',
+                content: 'Bitcoin\'s breakthrough above $100K signals a new phase of institutional adoption. Our sentiment analysis shows strong positive momentum driven by ETF inflows and corporate treasury allocations. The crypto market appears to be entering a sustained bull run with altcoins following Bitcoin\'s lead.'
+            },
+            {
+                title: 'Federal Reserve Policy Impact',
+                content: 'The Fed\'s dovish signals are creating a favorable environment for risk assets. Our analysis suggests that potential rate cuts in Q2 2024 could provide significant tailwinds for growth stocks and technology sectors. The market is pricing in a soft landing scenario with continued economic expansion.'
+            },
+            {
+                title: 'Energy Sector Volatility Assessment',
+                content: 'Geopolitical tensions are creating significant volatility in energy markets. While short-term supply concerns are driving prices higher, our analysis suggests that alternative energy investments may benefit from increased focus on energy security and sustainability initiatives.'
+            }
+        ];
+
+        function displayNews(news) {
+            const container = document.getElementById('newsContainer');
+            container.innerHTML = news.map(item => `
+                <div class="news-item ${item.featured ? 'featured' : ''}">
+                    <div class="news-title">${item.title}</div>
+                    <div class="news-summary">${item.summary}</div>
+                    <div class="news-meta">
+                        <span>${item.timestamp} • ${item.source}</span>
+                        <span class="news-impact ${item.impact}">${item.impact.toUpperCase()}</span>
+                    </div>
+                    <div class="news-tickers">
+                        ${item.tickers.map(ticker => `<span class="ticker-tag">${ticker}</span>`).join('')}
+            </div>
+        </div>
+            `).join('');
+        }
+
+        function displayAnalysis(analysis) {
+            const container = document.getElementById('analysisContainer');
+            container.innerHTML = analysis.map(item => `
+                <div class="analysis-item">
+                    <div class="analysis-title">${item.title}</div>
+                    <div class="analysis-content">${item.content}</div>
+                </div>
+            `).join('');
+        }
+
+        function refreshNews() {
+            const button = document.querySelector('.refresh-btn');
+            button.textContent = '🔄 Refreshing...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                displayNews(marketNews);
+                displayAnalysis(marketAnalysis);
+                button.textContent = '🔄 Refresh News';
+                button.disabled = false;
+            }, 2000);
+        }
+
+        // Filter functionality
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filter = this.dataset.filter;
+                let filteredNews = marketNews;
+                
+                if (filter !== 'all') {
+                    filteredNews = marketNews.filter(item => item.category === filter);
+                }
+                
+                displayNews(filteredNews);
+            });
+        });
+
+        // Auto-refresh every 60 seconds
+        setInterval(refreshNews, 60000);
+
+        // Initial load
+        displayNews(marketNews);
+        displayAnalysis(marketAnalysis);
+    </script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorpion Copilot - AI Trading Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(to right, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        
+        .nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            min-width: 200px;
+            z-index: 1000;
+            top: 100%;
+            left: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .nav-dropdown-content a {
+            color: #94a3b8;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            display: block;
+            border-radius: 0;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-dropdown-content a:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-content {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-btn {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-dropdown-btn {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .nav-dropdown-btn::after {
+            content: '▼';
+            font-size: 0.7rem;
+            transition: transform 0.3s;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-btn::after {
+            transform: rotate(180deg);
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .header .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .capabilities {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .capability {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .capability h3 {
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+        }
+
+        .capability p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .chat-container {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 8px;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .message.user {
+            background: rgba(59, 130, 246, 0.2);
+            margin-left: 2rem;
+        }
+
+        .message.bot {
+            background: rgba(34, 197, 94, 0.2);
+            margin-right: 2rem;
+        }
+
+        .message-header {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #60a5fa;
+        }
+
+        .message.bot .message-header {
+            color: #22c55e;
+        }
+
+        .message-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .suggestions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-btn {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .suggestion-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+
+        .chat-input button {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chat-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(96, 165, 250, 0.4);
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            color: #94a3b8;
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+            
+            .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message.user {
+                margin-left: 0.5rem;
+            }
+            
+            .message.bot {
+                margin-right: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Scorpion Copilot</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="ScorpionCopilot_Dashboard.html">Dashboard</a></li>
+                <li><a href="live-feed.html">Live Feed</a></li>
+                <li><a href="top-opportunities.html">Top Opportunities</a></li>
+                <li class="nav-dropdown">
+                    <span class="nav-dropdown-btn">Analysis</span>
+                    <div class="nav-dropdown-content">
+                        <a href="news.html">News & Analysis</a>
+                        <a href="portfolio.html">Portfolio</a>
+                        <a href="alerts.html">Alerts</a>
+                    </div>
+                </li>
+                <li class="nav-dropdown">
+                    <span class="nav-dropdown-btn">Tools</span>
+                    <div class="nav-dropdown-content">
+                        <a href="chatbot.html" class="active">AI Chat</a>
+                        <a href="trading212-import.html">Trading212 Import</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Advanced AI Trading Partner</h1>
+            <p class="subtitle">Institutional-quality analysis and strategies</p>
+        </div>
+
+        <div class="capabilities">
+            <div class="capability">
+                <h3>📊 Position Sizing</h3>
+                <p>Kelly Criterion, Risk Parity, Volatility-based sizing</p>
+            </div>
+            <div class="capability">
+                <h3>⏰ Timing Analysis</h3>
+                <p>Multi-timeframe, Technical patterns, Entry strategies</p>
+            </div>
+            <div class="capability">
+                <h3>🎯 Risk Management</h3>
+                <p>Advanced hedging, Correlation analysis, Portfolio optimization</p>
+            </div>
+            <div class="capability">
+                <h3>📈 Strategies</h3>
+                <p>Momentum, Value, Growth, Options, Crypto, DCA</p>
+            </div>
+            <div class="capability">
+                <h3>🔮 Predictions</h3>
+                <p>Market outlook, Sector rotation, Volatility analysis</p>
+            </div>
+            <div class="capability">
+                <h3>💡 Optimization</h3>
+                <p>Portfolio rebalancing, Factor investing, Risk-adjusted returns</p>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="suggestions">
+                <button class="suggestion-btn" onclick="askQuestion('How much should I invest in AAPL using Kelly Criterion?')">Kelly Position Sizing</button>
+                <button class="suggestion-btn" onclick="askQuestion('What is the best trading strategy for this market?')">Strategy Analysis</button>
+                <button class="suggestion-btn" onclick="askQuestion('How do I optimize my portfolio allocation?')">Portfolio Optimization</button>
+                <button class="suggestion-btn" onclick="askQuestion('What are the best options strategies for NVDA?')">Options Strategies</button>
+                <button class="suggestion-btn" onclick="askQuestion('How do I hedge my portfolio against market risk?')">Hedging Strategies</button>
+                <button class="suggestion-btn" onclick="askQuestion('What is the market outlook for the next 6 months?')">Market Prediction</button>
+                <button class="suggestion-btn" onclick="askQuestion('Analyze sector rotation opportunities')">Sector Analysis</button>
+                <button class="suggestion-btn" onclick="askQuestion('What is the correlation between my portfolio positions?')">Correlation Analysis</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div class="message-header">🚀 Advanced AI Trading Partner</div>
+                    <div class="message-content">Welcome! I'm your advanced AI trading partner with institutional-quality analysis capabilities.
+
+I can help you with:
+
+📊 **Advanced Position Sizing:**
+• Kelly Criterion optimization
+• Risk Parity allocation
+• Volatility-based sizing
+• Multi-factor analysis
+
+⏰ **Timing & Entry Strategies:**
+• Multi-timeframe analysis
+• Technical pattern recognition
+• Fundamental timing
+• Dollar-cost averaging strategies
+
+🎯 **Risk Management:**
+• Advanced hedging strategies
+• Portfolio correlation analysis
+• Volatility management
+• Options-based protection
+
+📈 **Trading Strategies:**
+• Momentum vs Value analysis
+• Growth investing strategies
+• Options trading strategies
+• Cryptocurrency analysis
+• Sector rotation strategies
+
+🔮 **Market Analysis:**
+• Market predictions and outlook
+• Sector performance analysis
+• Volatility environment assessment
+• Fundamental and technical analysis
+
+💡 **Portfolio Optimization:**
+• Modern Portfolio Theory
+• Factor investing
+• Rebalancing strategies
+• Risk-adjusted returns
+
+Ask me anything about advanced trading strategies, portfolio optimization, or market analysis!</div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                AI is analyzing...
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Ask about advanced trading strategies..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let marketData = null;
+        let portfolioData = null;
+
+        // Load data
+        function loadData() {
+            const savedMarketData = localStorage.getItem('marketData');
+            if (savedMarketData) {
+                marketData = JSON.parse(savedMarketData);
+            }
+
+            const savedPortfolioData = localStorage.getItem('trading212Portfolio');
+            if (savedPortfolioData) {
+                portfolioData = JSON.parse(savedPortfolioData);
+            }
+        }
+
+        function addMessage(content, isUser = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const header = document.createElement('div');
+            header.className = 'message-header';
+            header.textContent = isUser ? '👤 You' : '🚀 Advanced AI Trading Partner';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(header);
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            document.getElementById('typingIndicator').classList.add('show');
+        }
+
+        function hideTyping() {
+            document.getElementById('typingIndicator').classList.remove('show');
+        }
+
+        function askQuestion(question) {
+            document.getElementById('messageInput').value = question;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, true);
+            input.value = '';
+            
+            // Show typing indicator
+            showTyping();
+            
+            // Disable send button
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Analyzing...';
+            
+            // Call the advanced AI backend
+            fetch('/api/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    question: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTyping();
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`);
+                } else {
+                    addMessage(data.response);
+                }
+                
+                // Re-enable send button
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            })
+            .catch(error => {
+                hideTyping();
+                addMessage(`Connection error: ${error.message}. Please make sure the Flask server is running.`);
+                
+                // Re-enable send button
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            });
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
+    
